@@ -1776,7 +1776,9 @@ namespace SickToolbox {
   /* remaining microseconds */
   timeout_val.tv_usec = DEFAULT_SICK_CONNECT_TIMEOUT % (1 * 1000 * 1000);
 	/* Wait for the OS to tell us that the connection is established! */
-	num_active_files = select(getdtablesize(),0,&file_desc_set,0,&timeout_val);
+  /* first argument is nfds which should be nfds the highest-numbered file
+  descriptor in any of the three sets, plus 1. */
+	num_active_files = select(_sick_fd+1,0,&file_desc_set,0,&timeout_val);
 
 	/* Figure out what to do based on the output of select */
 	if (num_active_files > 0) {

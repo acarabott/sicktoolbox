@@ -358,8 +358,8 @@ namespace SickToolbox {
       timeout_val.tv_usec = timeout_value % (1 * 1000 * 1000);
 
       /* Wait for the OS to tell us that data is waiting! */
-      num_active_files = select(getdtablesize(),&file_desc_set,0,0,(timeout_value > 0) ? &timeout_val : 0);
-      
+      num_active_files = select(_sick_fd+1,&file_desc_set,0,0,(timeout_value > 0) ? &timeout_val : 0);
+
       /* Figure out what to do based on the output of select */
       if (num_active_files > 0) {
 	
