@@ -353,7 +353,9 @@ namespace SickToolbox {
       
       /* Setup the timeout structure */
       memset(&timeout_val,0,sizeof(timeout_val));   // Initialize the buffer
-      timeout_val.tv_usec = timeout_value;          // Wait for specified time before throwing a timeout
+      // Wait for specified time before throwing a timeout
+      timeout_val.tv_sec = timeout_value / (1 * 1000 * 1000);
+      timeout_val.tv_usec = timeout_value % (1 * 1000 * 1000);
 
       /* Wait for the OS to tell us that data is waiting! */
       num_active_files = select(getdtablesize(),&file_desc_set,0,0,(timeout_value > 0) ? &timeout_val : 0);

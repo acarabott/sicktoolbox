@@ -37,7 +37,7 @@
 #include "SickLD.hh"
 #include "SickLDMessage.hh"
 #include "SickLDBufferMonitor.hh"
-#include "SickLDUtility.hh"   
+#include "SickLDUtility.hh"
 #include "SickException.hh"
 
 /* Associate the namespace */
@@ -60,7 +60,7 @@ namespace SickToolbox {
     /* Initialize the sick identity */
     _sick_identity.sick_part_number =
       _sick_identity.sick_name =
-      _sick_identity.sick_version = 
+      _sick_identity.sick_version =
       _sick_identity.sick_serial_number =
       _sick_identity.sick_edm_serial_number =
       _sick_identity.sick_firmware_part_number =
@@ -90,10 +90,10 @@ namespace SickToolbox {
    */
   void SickLD::Initialize( ) throw( SickIOException, SickThreadException, SickTimeoutException, SickErrorException ) {
 
-    std::cout << "\t*** Attempting to initialize the Sick LD..." << std::endl; 
+    std::cout << "\t*** Attempting to initialize the Sick LD..." << std::endl;
 
     try {
-      
+
       /* Attempt to connect to the Sick LD */
       std::cout << "\tAttempting to connect to Sick LD @ " << _sick_ip_address << ":" << _sick_tcp_port << std::endl;
       _setupConnection();
@@ -103,18 +103,18 @@ namespace SickToolbox {
       std::cout << "\tAttempting to start buffer monitor..." << std::endl;
       _startListening();
       std::cout << "\t\tBuffer monitor started!" << std::endl;
-    
+
       /* Ok, lets sync the driver with the Sick */
       std::cout << "\tAttempting to sync driver with Sick LD..." << std::endl;
       _syncDriverWithSick();
-      
+
     }
-    
+
     catch(SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     catch(SickThreadException &sick_thread_exception) {
       std::cerr << sick_thread_exception.what() << std::endl;
       throw;
@@ -129,7 +129,7 @@ namespace SickToolbox {
       std::cerr << "SickLD::Initialize - Unknown exception!" << std::endl;
       throw;
     }
-    
+
     std::cout << "\t\tSynchronized!" << std::endl;
 
     _sick_initialized = true;
@@ -150,7 +150,7 @@ namespace SickToolbox {
     if (!_sick_initialized) {
       throw SickIOException("SickLD::GetSickStatus: Device NOT Initialized!!!");
     }
-  
+
     /* Acquire the sensor and motor mode from the device */
     try {
       _getSickStatus();
@@ -170,11 +170,11 @@ namespace SickToolbox {
       std::cerr << "SickLD::GetSickStatus - Unknown exception!" << std::endl;
       throw;
     }
-    
+
     /* Now that the driver is updated, assign the return values */
     sick_sensor_mode = _sick_sensor_mode;
     sick_motor_mode = _sick_motor_mode;
-  
+
     /* Success */
   }
 
@@ -186,7 +186,7 @@ namespace SickToolbox {
    *
    * NOTE: The active scan areas set at this point are only maintained until a device
    *       reset occurs. In other words, they are not written to flash.
-   */ 
+   */
   void SickLD::SetSickTempScanAreas( const double * active_sector_start_angles, const double * active_sector_stop_angles,
 				     const unsigned int num_active_sectors )
         throw( SickTimeoutException, SickIOException, SickConfigException ) {
@@ -195,22 +195,22 @@ namespace SickToolbox {
     if (!_sick_initialized) {
       throw SickConfigException("SickLD::SetSickTempScanAreas: Device NOT Initialized!!!");
     }
-    
+
     /* Do the standard initialization */
     try {
-      
+
       /* Set the temporary scan configuration */
       std::cout << "\tAttempting to set desired scan config..." << std::endl;
       _setSickTemporaryScanAreas(active_sector_start_angles,active_sector_stop_angles,num_active_sectors);
       std::cout << "\t\tUsing desired scan area(s)!" << std::endl;
 
     }
-    
+
     catch(SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     catch(SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
@@ -220,32 +220,32 @@ namespace SickToolbox {
       std::cerr << sick_config_exception.what() << std::endl;
       throw;
     }
-    
+
     catch(...) {
       std::cerr << "SickLD::Initialize - Unknown exception!" << std::endl;
       throw;
     }
-    
-    /* Success */    
+
+    /* Success */
   }
-  
-  
+
+
   /**
    * \brief Set the absolute time of the Sick LD unit.
    * \param absolute_clock_time The absolute clock time in milliseconds
    * \param new_sick_clock_time The clock time in milliseconds returned from the device
-   * 
+   *
    * ALERT: If the Sick LD is in MEASUREMENT mode, this method will first set the device
    *        to ROTATE mode after killing any active data streams (as per the protocol).
    */
-  void SickLD::SetSickTimeAbsolute( const uint16_t absolute_clock_time, uint16_t &new_sick_clock_time ) 
+  void SickLD::SetSickTimeAbsolute( const uint16_t absolute_clock_time, uint16_t &new_sick_clock_time )
     throw( SickErrorException, SickTimeoutException, SickIOException, SickConfigException ) {
 
     /* Ensure the device has been initialized */
     if (!_sick_initialized) {
       throw SickConfigException("SickLD::SetSickTimeAbsolute: Device NOT Initialized!!!");
     }
-  
+
     /* Ensure the device is not in MEASURE mode */
     if (_sick_sensor_mode == SICK_SENSOR_MODE_MEASURE) {
 
@@ -253,35 +253,35 @@ namespace SickToolbox {
       try {
 	_setSickSensorModeToRotate();
       }
-               
+
       /* Handle a timeout! */
       catch (SickTimeoutException &sick_timeout_exception) {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::SetSickTimeAbsolute: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-      
+      }
+
     }
-  
+
     std::cout << "\tSetting Sick LD absolute clock time..." << std::endl;
-  
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
@@ -295,25 +295,25 @@ namespace SickToolbox {
 
     /* Create the Sick LD send/receive message objects */
     SickLDMessage send_message(payload_buffer,4);
-    SickLDMessage recv_message;  
-  
+    SickLDMessage recv_message;
+
     /* Send the message and check for the reply */
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-            
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
@@ -325,14 +325,14 @@ namespace SickToolbox {
 
     /* Get the message payload */
     recv_message.GetPayload(payload_buffer);
-  
+
     /* Extract the new Sick LD clock time from the response */
     uint16_t clock_time;
     memcpy(&clock_time,&payload_buffer[2],2);
     new_sick_clock_time = sick_ld_to_host_byte_order(clock_time);
 
     std::cout << "\t\tClock time set!" << std::endl;
-  
+
     /* Success */
   }
 
@@ -344,50 +344,50 @@ namespace SickToolbox {
    * ALERT: If the Sick LD is in MEASUREMENT mode, this method will first set the device
    *        to ROTATE mode after killing any active data streams (as per the protocol).
    */
-  void SickLD::SetSickTimeRelative( const int16_t delta_time, uint16_t &new_sick_clock_time ) 
+  void SickLD::SetSickTimeRelative( const int16_t delta_time, uint16_t &new_sick_clock_time )
     throw( SickErrorException, SickTimeoutException, SickIOException, SickConfigException ) {
 
     /* Ensure the device has been initialized */
     if (!_sick_initialized) {
       throw SickConfigException("SickLD::SetSickTimeRelative: Device NOT Initialized!!!");
     }
-  
+
     /* Ensure the device is not in MEASURE mode */
     if (_sick_sensor_mode == SICK_SENSOR_MODE_MEASURE) {
-      
+
       /* If it is then set it to rotate */
       try {
 	_setSickSensorModeToRotate();
       }
-      
+
       /* Handle a timeout! */
       catch (SickTimeoutException &sick_timeout_exception) {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::SetSickTimeRelative: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-      
+      }
+
     }
-    
+
     std::cout << "\tSetting Sick LD relative clock time..." << std::endl;
-  
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
@@ -402,24 +402,24 @@ namespace SickToolbox {
     /* Create the Sick LD send/receive message objects */
     SickLDMessage send_message(payload_buffer,4);
     SickLDMessage recv_message;
-  
+
     /* Send the message and check for the expected reply */
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-            
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickTimeRelative: Unknown exception!!!" << std::endl;
@@ -431,14 +431,14 @@ namespace SickToolbox {
 
     /* Get the message payload */
     recv_message.GetPayload(payload_buffer);
-  
+
     /* Extract the new Sick LD clock time from the response */
     uint16_t clock_time;
     memcpy(&clock_time,&payload_buffer[2],2);
     new_sick_clock_time = sick_ld_to_host_byte_order(clock_time);
 
     std::cout << "\t\tClock time set!" << std::endl;
-  
+
     /* Success */
   }
 
@@ -468,24 +468,24 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_syncDriverWithSick: Unknown exception!!!" << std::endl;
       throw;
-    } 
+    }
 
     /* Success! */
   }
@@ -500,53 +500,53 @@ namespace SickToolbox {
     if (!_sick_initialized) {
       throw SickIOException("SickLD::GetSickSignals: Device NOT Initialized!!!");
     }
-  
+
     /* Initialize the destination buffer */
     sick_signal_flags = 0;
-  
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
     /* Set the service IDs */
     payload_buffer[0] = SICK_STAT_SERV_CODE;       // Requested service type
     payload_buffer[1] = SICK_STAT_SERV_GET_SIGNAL; // Requested service subtype
-  
+
     /* Create the Sick message */
     SickLDMessage send_message(payload_buffer,2);
     SickLDMessage recv_message;
-  
+
     /* Send the message and get the reply */
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::GetSickSignals: Unknown exception!!!" << std::endl;
       throw;
     }
-    
+
     /* Reset the payload buffer */
     memset(payload_buffer,0,2);
-  
+
     /* Extract the message payload */
     recv_message.GetPayload(payload_buffer);
 
     /* Extract the Signal flags */
     sick_signal_flags = payload_buffer[3];
-  
+
     /* Success */
   }
 
@@ -561,14 +561,14 @@ namespace SickToolbox {
     if (!_sick_initialized) {
       throw SickIOException("SickLD::GetSickTime: Device NOT Initialized!!!");
     }
-  
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
     /* Set the service IDs */
     payload_buffer[0] = SICK_CONF_SERV_CODE;             // Requested service type
     payload_buffer[1] = SICK_CONF_SERV_GET_SYNC_CLOCK;   // Requested service subtype
-  
+
     /* Create the Sick messages */
     SickLDMessage send_message(payload_buffer,2);
     SickLDMessage recv_message;
@@ -577,19 +577,19 @@ namespace SickToolbox {
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::GetSickTime: Unknown exception!!!" << std::endl;
@@ -598,7 +598,7 @@ namespace SickToolbox {
 
     /* Reset the payload buffer */
     memset(payload_buffer,0,2);
-  
+
     /* Acquire the returned payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -615,7 +615,7 @@ namespace SickToolbox {
    *
    * NOTE: This method writes this option to the Sick LD's flash, so there is no
    *       need to use it except when configuring the device.
-   */ 
+   */
   void SickLD::EnableNearfieldSuppression( )
     throw( SickErrorException, SickTimeoutException, SickIOException ) {
 
@@ -623,7 +623,7 @@ namespace SickToolbox {
     if(!_sick_initialized) {
       throw SickIOException("SickLD::EnableNearfieldSuppression: Device NOT Initialized!!!");
     }
-  
+
     /* Tell the Sick LD to use nearfield suppression! */
     std::cout << "\tEnabling nearfield suppression..." << std::endl;
     try {
@@ -635,27 +635,27 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::EnableNearfieldSuppression: Unknown exception!!!" << std::endl;
       throw;
-    }  
-    
+    }
+
     std::cout << "\t\tSuppression is enabled!" << std::endl;
-  
+
     /* Success */
   }
 
@@ -664,7 +664,7 @@ namespace SickToolbox {
    *
    * NOTE: This method writes this option to the Sick LD's flash, so there is no
    *       need to use it except when configuring the device.
-   */ 
+   */
   void SickLD::DisableNearfieldSuppression( )
     throw( SickErrorException, SickTimeoutException, SickIOException ) {
 
@@ -672,7 +672,7 @@ namespace SickToolbox {
     if (!_sick_initialized) {
       throw SickIOException("SickLD::DisableNearfieldSuppression: Device NOT Initialized!!!");
     }
-  
+
     /* Tell the Sick LD to use nearfield suppression! */
     std::cout << "\tDisabling nearfield suppression..." << std::endl;
     try {
@@ -684,27 +684,27 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::DisableNearfieldSuppression: Unknown exception!!!" << std::endl;
       throw;
-    }  
-    
+    }
+
     std::cout << "\t\tSuppression is disabled!" << std::endl;
-  
+
     /* Success */
   }
 
@@ -753,14 +753,14 @@ namespace SickToolbox {
     if(!_sick_initialized) {
       throw SickIOException("SickLD::GetSickMeasurements: Device NOT Initialized!!!");
     }
-  
+
     /* The following conditional holds true if the user wants a RANGE+ECHO data
      * stream but already has an active RANGE-ONLY stream.
      */
     if (_sick_streaming_range_data && echo_measurements != NULL) {
 
       try {
-	
+
         /* Cancel the current RANGE-ONLY data stream */
         _cancelSickScanProfiles();
 
@@ -774,25 +774,25 @@ namespace SickToolbox {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::GetSickMeasurements: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-      
+      }
+
     }
 
     /* The following conditional holds true if the user wants a RANGE-ONLY data
@@ -807,52 +807,52 @@ namespace SickToolbox {
 
         /* Request a RANGE-ONLY data stream */
         _getSickScanProfiles(SICK_SCAN_PROFILE_RANGE);
-	
+
       }
-      
+
       /* Handle a timeout! */
       catch (SickTimeoutException &sick_timeout_exception) {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::GetSickMeasurements: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-      
+      }
+
     }
 
     /* If there aren't any active data streams, setup a new one */
     if (!_sick_streaming_range_data && !_sick_streaming_range_and_echo_data) {
 
       try {
-      
+
 	/* Determine the target data stream by checking the value of echo_measurements */
 	if (echo_measurements != NULL) {
-	  
+
 	  /* Request a RANGE+ECHO data stream */
-	  _getSickScanProfiles(SICK_SCAN_PROFILE_RANGE_AND_ECHO);	  
-	  
+	  _getSickScanProfiles(SICK_SCAN_PROFILE_RANGE_AND_ECHO);
+
 	}
 	else {
-	  
+
 	  /* Request a RANGE+ONLY data stream */
 	  _getSickScanProfiles(SICK_SCAN_PROFILE_RANGE);
-	  
+
 	}
 
       }
@@ -862,45 +862,45 @@ namespace SickToolbox {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-      
+      }
+
     }
 
     /* Declare the receive message object */
     SickLDMessage recv_message;
-  
+
     /* Acquire the most recently buffered message */
     try {
       _recvMessage(recv_message,(unsigned int)1e6);
     }
-    
+
     catch(SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
-    }  
+    }
 
     catch(...) {
       std::cerr << "SickLD::GetSickMeasurements - Unknown exception!" << std::endl;
       throw;
     }
-    
+
     /* A single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
@@ -909,7 +909,7 @@ namespace SickToolbox {
 
     /* Define the destination Sick LD scan profile struct */
     sick_ld_scan_profile_t profile_data;
-  
+
     /* Extract the scan profile */
     _parseScanProfile(&payload_buffer[2],profile_data);
 
@@ -929,59 +929,59 @@ namespace SickToolbox {
       /* Copy over the returned range values */
       memcpy(&range_measurements[total_measurements],profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].range_values,
 	     profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].num_data_points*sizeof(double));
-    
+
       /* Copy the returned echo values  if requested */
       if (echo_measurements != NULL) {
 	memcpy(&echo_measurements[total_measurements],profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].echo_values,
 	       profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].num_data_points*sizeof(unsigned int));
       }
-    
+
       /* Set the number of measurements */
       if (num_measurements != NULL) {
 	num_measurements[i] = profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].num_data_points;
       }
-    
+
       /* Set the associated sector's id if requested */
       if (sector_ids != NULL) {
 	sector_ids[i] = profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].sector_num;
       }
-    
+
       /* Set the associated sector's index into the range measurement buffer if requested */
       if (sector_data_offsets != NULL) {
 	sector_data_offsets[i] = total_measurements;
       }
-    
+
       /* Set the step angle if requested */
       if (sector_step_angles != NULL) {
 	sector_step_angles[i] = profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].angle_step;
       }
-    
+
       /* Set the sector start angle if requested */
       if (sector_start_angles != NULL) {
 	sector_start_angles[i] = profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].angle_start;
       }
-    
+
       /* Set the sector stop angle if requested */
       if (sector_stop_angles != NULL) {
 	sector_stop_angles[i] = profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].angle_stop;
       }
-    
+
       /* Set the sector start timestamp if requested */
       if (sector_start_timestamps != NULL) {
 	sector_start_timestamps[i] = profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].timestamp_start;
       }
-    
+
       /* Set the sector stop timestamp if requested */
       if (sector_stop_timestamps != NULL) {
 	sector_stop_timestamps[i] = profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].timestamp_stop;
       }
-    
+
       /* Update the total number of measurements */
       total_measurements += profile_data.sector_data[_sick_sector_config.sick_active_sector_ids[i]].num_data_points;
     }
 
     /* Success */
-  
+
   }
 
   /**
@@ -1005,31 +1005,31 @@ namespace SickToolbox {
     try {
       _setSickGlobalConfig(sick_sensor_id,GetSickMotorSpeed(),GetSickScanResolution());
     }
-    
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::SetSickSensorID: Unknown exception!!!" << std::endl;
       throw;
-    }  
-  
+    }
+
     /* Success! */
   }
 
@@ -1049,41 +1049,41 @@ namespace SickToolbox {
     if (!_validSickMotorSpeed(sick_motor_speed)) {
       throw SickConfigException("SickLD::SetSickMotorSpeed: Invalid sick motor speed!!!");
     }
-    
+
     /* Check to ensure a valid pulse frequency for the device */
     if (!_validPulseFrequency(sick_motor_speed,GetSickScanResolution())) {
       throw SickConfigException("SickLD::SetSickMotorSpeed: Invalid pulse frequency!!!");
     }
-    
+
     /* Attempt to set the new global config in the flash! */
     try {
       _setSickGlobalConfig(GetSickSensorID(),sick_motor_speed,GetSickScanResolution());
     }
-    
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::SetSickMotorSpeed: Unknown exception!!!" << std::endl;
       throw;
-    }      
-  
+    }
+
     /* Success! */
   }
 
@@ -1106,26 +1106,26 @@ namespace SickToolbox {
     if (!_sick_initialized) {
       throw SickIOException("SickLD::SetSickScanResolution: Device NOT Initialized!!!");
     }
-  
+
     /* Buffers to hold the active sector data */
     double active_sector_start_angles[SICK_MAX_NUM_SECTORS] = {0};
     double active_sector_stop_angles[SICK_MAX_NUM_SECTORS] = {0};
-  
+
     /* Extract the start and stop angles for the current active sectors */
     for (unsigned int i = 0; i < _sick_sector_config.sick_num_active_sectors; i++) {
       active_sector_start_angles[i] = _sick_sector_config.sick_sector_start_angles[_sick_sector_config.sick_active_sector_ids[i]];
-      active_sector_stop_angles[i] = _sick_sector_config.sick_sector_stop_angles[_sick_sector_config.sick_active_sector_ids[i]];   
+      active_sector_stop_angles[i] = _sick_sector_config.sick_sector_stop_angles[_sick_sector_config.sick_active_sector_ids[i]];
     }
 
     /* Set the operating parameters accordingly */
-    try { 
+    try {
       SetSickGlobalParamsAndScanAreas(GetSickMotorSpeed(),sick_angle_step,
 					 active_sector_start_angles,active_sector_stop_angles,
 					 _sick_sector_config.sick_num_active_sectors);
     }
 
     catch(...) { }
-  
+
     /* Success! */
   }
 
@@ -1148,11 +1148,11 @@ namespace SickToolbox {
     if (!_sick_initialized) {
       throw SickIOException("SickLD::SetSickGlobalParamsAndScanAreas: Device NOT Initialized!!!");
     }
-  
+
     /* Attempt to write both a new scan resolution and scan area config */
     try {
       _setSickGlobalParamsAndScanAreas(sick_motor_speed,sick_angle_step,
-				       active_sector_start_angles,active_sector_stop_angles,num_active_sectors);    
+				       active_sector_start_angles,active_sector_stop_angles,num_active_sectors);
     }
 
     /* Handle a timeout! */
@@ -1160,7 +1160,7 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
@@ -1172,21 +1172,21 @@ namespace SickToolbox {
       std::cerr << sick_config_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::SetSickGlobalParamsAndScanAreas: Unknown exception!!!" << std::endl;
       throw;
-    }  
-  
+    }
+
     /* Success! */
-  
+
   }
 
   /**
@@ -1204,7 +1204,7 @@ namespace SickToolbox {
     if (!_sick_initialized) {
       throw SickIOException("SickLD::SetSickScanAreas: Device NOT Initialized!!!");
     }
-  
+
     /* Attempt to write both a new scan resolution and scan area config */
     try {
       _setSickGlobalParamsAndScanAreas(GetSickMotorSpeed(),GetSickScanResolution(),
@@ -1216,7 +1216,7 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
@@ -1228,21 +1228,21 @@ namespace SickToolbox {
       std::cerr << sick_config_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::SetSickScanAreas: Unknown exception!!!" << std::endl;
       throw;
-    }  
-    
+    }
+
     /* Success! */
-  
+
   }
 
   /**
@@ -1256,12 +1256,12 @@ namespace SickToolbox {
     if (!_sick_initialized) {
       throw SickIOException("SickLD::ResetSick: Device NOT Initialized!!!");
     }
-  
+
     /* Ensure a valid reset level was given */
     if (reset_level > SICK_WORK_SERV_RESET_HALT_APP) {
       throw SickConfigException("SickLD::ResetSick: Invalid given reset level!");
     }
-  
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
@@ -1269,7 +1269,7 @@ namespace SickToolbox {
     payload_buffer[0] = SICK_WORK_SERV_CODE;             // Requested service type
     payload_buffer[1] = SICK_WORK_SERV_RESET;            // Requested service subtype
     payload_buffer[3] = (uint8_t)reset_level;            // RESETLEVEL
-  
+
     /* Create the Sick messages */
     SickLDMessage send_message(payload_buffer,4);
     SickLDMessage recv_message;
@@ -1278,19 +1278,19 @@ namespace SickToolbox {
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
@@ -1299,7 +1299,7 @@ namespace SickToolbox {
 
     /* Reset the payload buffer */
     memset(payload_buffer,0,4);
-  
+
     /* Acquire the returned payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -1383,7 +1383,7 @@ namespace SickToolbox {
 
     /* Return the std string representation */
     return str_stream.str();
- 
+
   }
 
   /**
@@ -1504,12 +1504,12 @@ namespace SickToolbox {
     str_stream << "\t============= Sick LD Status =============" << std::endl;
     str_stream << "\tSensor Mode: " << _sickSensorModeToString(_sick_sensor_mode) << std::endl;
     str_stream << "\tMotor Mode: " << _sickMotorModeToString(_sick_motor_mode) << std::endl;
-    str_stream << "\t==========================================" << std::endl;    
+    str_stream << "\t==========================================" << std::endl;
 
     return str_stream.str();
-    
+
   }
-  
+
   /**
    * \brief Acquire the Sick LD's identity as a printable string
    * \return The Sick LD identity as a well-formatted string
@@ -1517,7 +1517,7 @@ namespace SickToolbox {
   std::string SickLD::GetSickIdentityAsString() const {
 
     std::ostringstream str_stream;
-    
+
     str_stream << "\t============ Sick LD Identity ============" << std::endl;
     str_stream << "\tSensor Part #: " << GetSickPartNumber() << std::endl;
     str_stream << "\tSensor Name: " << GetSickName() << std::endl;
@@ -1531,11 +1531,11 @@ namespace SickToolbox {
     str_stream << "\tApp. Software Name: " << GetSickAppSoftwareName() << std::endl;
     str_stream << "\tApp. Software Version: " << GetSickAppSoftwareVersionNumber() << std::endl;
     str_stream << "\t==========================================" << std::endl;
-    
+
     return str_stream.str();
 
   }
-  
+
   /**
    * \brief Acquire the Sick LD's global config as a printable string
    * \return The Sick LD global config as a well-formatted string
@@ -1543,15 +1543,15 @@ namespace SickToolbox {
   std::string SickLD::GetSickGlobalConfigAsString() const {
 
     std::stringstream str_stream;
-    
+
     str_stream << "\t=========== Sick Global Config ===========" << std::endl;
     str_stream << "\tSensor ID: " << GetSickSensorID() << std::endl;
     str_stream << "\tMotor Speed (5 to 20Hz): " << GetSickMotorSpeed() << std::endl;
     str_stream << "\tAngle Step (deg): " << GetSickScanResolution() << std::endl;
     str_stream << "\t==========================================" << std::endl;
-    
+
     return str_stream.str();
-    
+
   }
 
   /**
@@ -1567,11 +1567,11 @@ namespace SickToolbox {
     str_stream << "\tSubnet Mask: " << GetSickSubnetMask() << std::endl;
     str_stream << "\tGateway IP Address: " << GetSickGatewayIPAddress() << std::endl;
     str_stream << "\t==========================================" << std::endl;
-    
+
     return str_stream.str();
-    
+
   }
-  
+
   /**
    * \brief Acquire the Sick LD's sector config as a printable string
    * \return The Sick LD Sick LD's config as a well-formatted string
@@ -1579,11 +1579,11 @@ namespace SickToolbox {
   std::string SickLD::GetSickSectorConfigAsString() const {
 
     std::stringstream str_stream;
-    
+
     str_stream << "\t=========== Sick Sector Config ===========" << std::endl;
     str_stream << "\tNum. Active Sectors: " << (int)_sick_sector_config.sick_num_active_sectors << std::endl;
     str_stream << "\tNum. Initialized Sectors: " << (int)_sick_sector_config.sick_num_initialized_sectors << std::endl;
-    
+
     str_stream << "\tSector Configs.:" << std::endl;
     for (unsigned int i = 0; i < _sick_sector_config.sick_num_initialized_sectors; i++) {
       str_stream << "\t\t" << i << " ["
@@ -1591,13 +1591,13 @@ namespace SickToolbox {
 		 << _sick_sector_config.sick_sector_stop_angles[i] << "] ("
 		 << _sickSectorFunctionToString(_sick_sector_config.sick_sector_functions[i]) << ")" << std::endl;
     }
-    
+
     str_stream << "\t==========================================" << std::endl;
-    
+
     return str_stream.str();
 
   }
-  
+
   /**
    * \brief Computes the active area over all measuring sectors
    * \return The Sick LD active scan area
@@ -1607,13 +1607,13 @@ namespace SickToolbox {
     /* Some temp buffers */
     double sector_start_angles[SICK_MAX_NUM_SECTORS] = {0};
     double sector_stop_angles[SICK_MAX_NUM_SECTORS] = {0};
-  
+
     /* Sum the active areas over all sectors */
     for (unsigned int i = 0; i < _sick_sector_config.sick_num_active_sectors; i++) {
       sector_start_angles[i] = _sick_sector_config.sick_sector_start_angles[_sick_sector_config.sick_active_sector_ids[i]];
-      sector_stop_angles[i] = _sick_sector_config.sick_sector_stop_angles[_sick_sector_config.sick_active_sector_ids[i]];    
-    }  
-  
+      sector_stop_angles[i] = _sick_sector_config.sick_sector_stop_angles[_sick_sector_config.sick_active_sector_ids[i]];
+    }
+
     /* Return the computed total scan area */
     return _computeScanArea(GetSickScanResolution(),sector_start_angles,sector_stop_angles,_sick_sector_config.sick_num_active_sectors);
   }
@@ -1621,7 +1621,7 @@ namespace SickToolbox {
   /**
    * \brief Print the status of the Sick LD
    */
-  void SickLD::PrintSickStatus( ) const {  
+  void SickLD::PrintSickStatus( ) const {
     std::cout << GetSickStatusAsString() << std::flush;
   }
 
@@ -1635,21 +1635,21 @@ namespace SickToolbox {
   /**
    * \brief Print the Sick LD's global configuration
    */
-  void SickLD::PrintSickGlobalConfig( ) const {  
+  void SickLD::PrintSickGlobalConfig( ) const {
     std::cout << GetSickGlobalConfigAsString() << std::flush;
   }
 
   /**
    * \brief Print the Sick LD's Ethernet configuration
    */
-  void SickLD::PrintSickEthernetConfig( ) const {  
+  void SickLD::PrintSickEthernetConfig( ) const {
     std::cout << GetSickEthernetConfigAsString() << std::flush;
   }
 
   /**
    * \brief Print the Sick LD's sector configuration
    */
-  void SickLD::PrintSickSectorConfig( ) const {  
+  void SickLD::PrintSickSectorConfig( ) const {
     std::cout << GetSickSectorConfigAsString() << std::flush;
   }
 
@@ -1663,11 +1663,11 @@ namespace SickToolbox {
       throw SickIOException("SickLD::Uninitialize: Device NOT Initialized!!!");
     }
 
-    std::cout << std::endl << "\t*** Attempting to uninitialize the Sick LD..." << std::endl; 
-  
+    std::cout << std::endl << "\t*** Attempting to uninitialize the Sick LD..." << std::endl;
+
     /* If necessary, tell the Sick LD to stop streaming data */
     try {
-      
+
       std::cout << "\tSetting Sick LD to idle mode..." << std::endl;
       _setSickSensorModeToIdle();
       std::cout << "\t\tSick LD is now idle!" << std::endl;
@@ -1679,25 +1679,25 @@ namespace SickToolbox {
       std::cout << "\tAttempting to cancel buffer monitor..." << std::endl;
       _stopListening();
       std::cout << "\t\tBuffer monitor canceled!" << std::endl;
-    
+
       /* Attempt to close the tcp connection */
       std::cout << "\tClosing connection to Sick LD..." << std::endl;
       _teardownConnection();
 
     }
-           
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
@@ -1709,20 +1709,20 @@ namespace SickToolbox {
       std::cerr << sick_thread_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
       throw;
-    }  
+    }
 
     std::cout << "\t\tConnection closed!" << std::endl;
 
-    std::cout << "\t*** Uninit. complete - Sick LD is now offline!" << std::endl; 
+    std::cout << "\t*** Uninit. complete - Sick LD is now offline!" << std::endl;
 
     /* Mark the device as uninitialized */
     _sick_initialized = false;
-  
+
     /* Success! */
   }
 
@@ -1738,7 +1738,7 @@ namespace SickToolbox {
 
     /* Initialize the buffer */
     memset(&_sick_inet_address_info,0,sizeof(struct sockaddr_in));
-  
+
     /* Setup the Sick LD inet address structure */
     _sick_inet_address_info.sin_family = AF_INET;                                  // Internet protocol address family
     _sick_inet_address_info.sin_port = htons(_sick_tcp_port);                      // TCP port number
@@ -1748,13 +1748,13 @@ namespace SickToolbox {
 
       /* Set to non-blocking so we can time connect */
       _setNonBlockingIO();
-    
+
       /* Try to connect to the Sick LD */
       int conn_return;
       if ((conn_return = connect(_sick_fd,(struct sockaddr *)&_sick_inet_address_info,sizeof(struct sockaddr_in))) < 0) {
 
 	/* Check whether it is b/c it would block */
-	if (errno != EINPROGRESS) {	
+	if (errno != EINPROGRESS) {
 	  throw SickIOException("SickLD::_setupConnection: connect() failed!");
 	}
 
@@ -1763,56 +1763,59 @@ namespace SickToolbox {
 	int num_active_files = 0;
 	struct timeval timeout_val;                          // This structure will be used for setting our timeout values
 	fd_set file_desc_set;                                // File descriptor set for monitoring I/O
-    
+
 	/* Initialize and set the file descriptor set for select */
 	FD_ZERO(&file_desc_set);
 	FD_SET(_sick_fd,&file_desc_set);
 
 	/* Setup the timeout structure */
 	memset(&timeout_val,0,sizeof(timeout_val));          // Initialize the buffer
-	timeout_val.tv_usec = DEFAULT_SICK_CONNECT_TIMEOUT;  // Wait for specified time before throwing a timeout
-      
+  /* Wait for specified time before throwing a timeout */
+  /* seconds */
+  timeout_val.tv_sec = DEFAULT_SICK_CONNECT_TIMEOUT / (1 * 1000 * 1000);
+  /* remaining microseconds */
+  timeout_val.tv_usec = DEFAULT_SICK_CONNECT_TIMEOUT % (1 * 1000 * 1000);
 	/* Wait for the OS to tell us that the connection is established! */
 	num_active_files = select(getdtablesize(),0,&file_desc_set,0,&timeout_val);
-      
+
 	/* Figure out what to do based on the output of select */
 	if (num_active_files > 0) {
-	
+
 	  /* This is just a sanity check */
 	  if (!FD_ISSET(_sick_fd,&file_desc_set)) {
   	    throw SickIOException("SickLD::_setupConnection: Unexpected file descriptor!");
-	  }	  
+	  }
 
 	  /* Check for any errors on the socket - just to be sure */
 	  socklen_t len = sizeof(int);
-	  if (getsockopt(_sick_fd,SOL_SOCKET,SO_ERROR,(void*)(&valid_opt),&len) < 0) { 	    
+	  if (getsockopt(_sick_fd,SOL_SOCKET,SO_ERROR,(void*)(&valid_opt),&len) < 0) {
   	    throw SickIOException("SickLD::_setupConnection: getsockopt() failed!");
-	  } 
+	  }
 
 	  /* Check whether the opt value indicates error */
-	  if (valid_opt) { 
+	  if (valid_opt) {
 	    throw SickIOException("SickLD::_setupConnection: socket error on connect()!");
 	  }
-	  
+
   	}
 	else if (num_active_files == 0) {
-	
+
 	  /* A timeout has occurred! */
-	  throw SickTimeoutException("SickLD::_setupConnection: select() timeout!");	
+	  throw SickTimeoutException("SickLD::_setupConnection: select() timeout!");
 
 	}
 	else {
-	
+
 	  /* An error has occurred! */
-	  throw SickIOException("SickLD::_setupConnection: select() failed!");	
+	  throw SickIOException("SickLD::_setupConnection: select() failed!");
 
 	}
 
       }
 
       /* Restore blocking IO */
-      _setBlockingIO();	
-	
+      _setBlockingIO();
+
     }
 
     catch(SickIOException &sick_io_exception) {
@@ -1824,7 +1827,7 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     catch(...) {
       std::cerr << "SickLD::_setupConnection - Unknown exception occurred!" << std::endl;
       throw;
@@ -1841,7 +1844,7 @@ namespace SickToolbox {
   void SickLD::_syncDriverWithSick( )  throw( SickIOException, SickTimeoutException, SickErrorException ) {
 
     try {
-      
+
       /* Acquire current configuration */
       _getSickStatus();
       _getSickIdentity();
@@ -1859,25 +1862,25 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_syncDriverWithSick: Unknown exception!!!" << std::endl;
       throw;
-    }  
-  
+    }
+
     /* Success */
   }
 
@@ -1904,27 +1907,27 @@ namespace SickToolbox {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::_setSickSectorFunction: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-      
+      }
+
     }
-  
+
     /* Ensure a valid sector number */
     if (sector_number >= SICK_MAX_NUM_SECTORS) {
       throw SickConfigException("SickLD::_setSickSectorFunction: Invalid sector number!");
@@ -1944,49 +1947,49 @@ namespace SickToolbox {
     if (sector_stop_angle > SICK_MAX_SCAN_AREA) {
       throw SickConfigException("SickLD::_setSickSectorFunction: Invalid sector stop angle!");
     }
-  
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
     /* A temporary buffer for byte order conversion */
     uint16_t temp_buff = 0;
-  
+
     /* Set the service IDs */
     payload_buffer[0] = SICK_CONF_SERV_CODE;          // Requested service type
-    payload_buffer[1] = SICK_CONF_SERV_SET_FUNCTION;  // Requested service subtype                  
+    payload_buffer[1] = SICK_CONF_SERV_SET_FUNCTION;  // Requested service subtype
 
     /* Assign the payload data */
     payload_buffer[3] = sector_number;                // SECTORNUM
     payload_buffer[5] = sector_function;              // SECTORFUNC
 
     /* Set the sector stop value */
-    temp_buff = host_to_sick_ld_byte_order(_angleToTicks(sector_stop_angle));    
+    temp_buff = host_to_sick_ld_byte_order(_angleToTicks(sector_stop_angle));
     memcpy(&payload_buffer[6],&temp_buff,2);          // SECTORSTOP
 
     /* Include the flash flag */
     payload_buffer[9] = (uint8_t)write_to_flash;      // FLASHFLAG
 
     /* Create the Sick LD messages */
-    SickLDMessage send_message(payload_buffer,10);    
+    SickLDMessage send_message(payload_buffer,10);
     SickLDMessage recv_message;
 
     /* Send the message and get the reply */
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSectorFunction: Unknown exception!!!" << std::endl;
@@ -1995,15 +1998,15 @@ namespace SickToolbox {
 
     /* Reset the payload buffer (not necessary, but it doesn't hurt to be careful) */
     memset(payload_buffer,0,10);
-  
+
     /* Extract the message payload */
-    recv_message.GetPayload(payload_buffer);  
+    recv_message.GetPayload(payload_buffer);
 
     /* Check the response for an error */
     if (payload_buffer[2] == 0xFF && payload_buffer[3] == 0xFF) {
       throw SickConfigException("SickLD::_setSickSectorFunction: Invalid request!");
     }
-  
+
     /* Success! */
   }
 
@@ -2029,27 +2032,27 @@ namespace SickToolbox {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::_getSickSectorFunction: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-      
+      }
+
     }
-  
+
     /* Declare the message payload buffer */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
@@ -2057,7 +2060,7 @@ namespace SickToolbox {
     payload_buffer[0] = SICK_CONF_SERV_CODE;            // Requested service type
     payload_buffer[1] = SICK_CONF_SERV_GET_FUNCTION;    // Requested service subtype
     payload_buffer[3] = sector_num;                     // Sector number
-    
+
     /* Declare the send/recv Sick LD message objects */
     SickLDMessage send_message(payload_buffer,4);
     SickLDMessage recv_message;
@@ -2066,19 +2069,19 @@ namespace SickToolbox {
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-            
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getSickSectorFunction: Unknown exception!!!" << std::endl;
@@ -2087,7 +2090,7 @@ namespace SickToolbox {
 
     /* Reset the payload buffer */
     memset(payload_buffer,0,4);
-  
+
     /* Extract the message payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -2110,7 +2113,7 @@ namespace SickToolbox {
     /* Extract the sector stop angle (in ticks) */
     memcpy(&temp_buffer,&payload_buffer[6],2);
     sector_stop_angle = _ticksToAngle(sick_ld_to_host_byte_order(temp_buffer));
-  
+
     /* S'ok */
   }
 
@@ -2122,18 +2125,18 @@ namespace SickToolbox {
 
     /* If necessary adjust the operating mode of the sensor */
     if (_sick_sensor_mode != SICK_SENSOR_MODE_IDLE) {
-    
+
       /* Switch the sensor's operating mode to IDLE */
       try {
         _setSickSensorMode(SICK_SENSOR_MODE_IDLE);
       }
-      
+
       /* Handle a timeout! */
       catch (SickTimeoutException &sick_timeout_exception) {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
@@ -2145,15 +2148,15 @@ namespace SickToolbox {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::_setSickSensorModeToIdle: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-      
+      }
+
     }
-    
+
     /* Success */
   }
 
@@ -2165,7 +2168,7 @@ namespace SickToolbox {
 
     /* If necessary adjust the operating mode of the sensor */
     if (_sick_sensor_mode != SICK_SENSOR_MODE_ROTATE) {
-    
+
       /* Switch the sensor's operating mode to ROTATE */
       try {
         _setSickSensorMode(SICK_SENSOR_MODE_ROTATE);
@@ -2176,7 +2179,7 @@ namespace SickToolbox {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
@@ -2188,27 +2191,27 @@ namespace SickToolbox {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::_setSickSensorModeToRotate: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-    
+      }
+
     }
-  
+
     /* Success */
   }
 
   /**
    * \brief Sets the Sick LD sensor mode to ROTATE
    */
-  void SickLD::_setSickSensorModeToMeasure( ) 
+  void SickLD::_setSickSensorModeToMeasure( )
     throw( SickErrorException, SickTimeoutException, SickIOException ) {
 
     /* If necessary adjust the operating mode of the sensor */
     if (_sick_sensor_mode != SICK_SENSOR_MODE_MEASURE) {
-    
+
       /* Switch the sensor's operating mode to MEASURE */
       try {
         _setSickSensorMode(SICK_SENSOR_MODE_MEASURE);
@@ -2219,7 +2222,7 @@ namespace SickToolbox {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
@@ -2231,15 +2234,15 @@ namespace SickToolbox {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::_setSickSensorModeToMeasure: Unknown exception!!!" << std::endl;
 	throw;
-      }  
-    
+      }
+
     }
-  
+
     /* Success */
   }
 
@@ -2247,70 +2250,70 @@ namespace SickToolbox {
    * \brief Sets the Sick LD to the requested sensor mode
    * \param new_sick_sensor_mode The desired sensor mode
    */
-  void SickLD::_setSickSensorMode( const uint8_t new_sick_sensor_mode ) 
+  void SickLD::_setSickSensorMode( const uint8_t new_sick_sensor_mode )
     throw( SickErrorException, SickTimeoutException, SickIOException ) {
-  
+
     /* If the new mode matches the current mode then just return */
     if (_sick_sensor_mode == new_sick_sensor_mode) {
       return;
     }
 
     try {
-    
+
       /* If the current sensor mode is MEASURE and streaming data */
       if ((_sick_sensor_mode == SICK_SENSOR_MODE_MEASURE) &&
 	  (_sick_streaming_range_data || _sick_streaming_range_and_echo_data)) {
-	
+
 	/* Cancel the current stream */
 	_cancelSickScanProfiles();
-	
+
       }
-      
+
       /* The Sick LD must be in rotate mode before: going from IDLE to MEASURE or going from MEASURE to IDLE */
       if ((_sick_sensor_mode == SICK_SENSOR_MODE_IDLE && new_sick_sensor_mode == SICK_SENSOR_MODE_MEASURE) ||
 	  (_sick_sensor_mode == SICK_SENSOR_MODE_MEASURE && new_sick_sensor_mode == SICK_SENSOR_MODE_IDLE)) {
-	
+
 	/* Set to rotate mode */
 	_setSickSensorModeToRotate();
-	
+
       }
 
     }
-          
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
       throw;
-    }  
-    
+    }
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
-    
+
     /* The payload length */
     uint32_t payload_length = 2;
-    
+
     /* Set the service IDs */
     payload_buffer[0] = SICK_WORK_SERV_CODE;                                       // Requested service type
     payload_buffer[1] = _sickSensorModeToWorkServiceSubcode(new_sick_sensor_mode); // Requested service subtype
-    
+
     /* If the target sensor mode is rotate then we add two more bytes
      * to the payload length. Doing so adds two zero values to the payload
      * which tells it to use the angular step and scan freqeuncy values
@@ -2319,7 +2322,7 @@ namespace SickToolbox {
     if (new_sick_sensor_mode == SICK_SENSOR_MODE_ROTATE) {
       payload_length += 2;
     }
-    
+
     /* Define the send/receive message objects */
     SickLDMessage send_message(payload_buffer,payload_length);
     SickLDMessage recv_message;
@@ -2327,28 +2330,28 @@ namespace SickToolbox {
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-        
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
       throw;
     }
-      
+
     /* Reset the payload buffer */
     memset(payload_buffer,0,payload_length);
-  
+
     /* Extract the message payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -2366,7 +2369,7 @@ namespace SickToolbox {
 	/* Print the error code associated with the TRANS_MEASURE request */
         errMsg = errMsg + " (TRANS_MEAS Error Code: " + _sickTransMeasureReturnToString(return_code) + ")";
 	throw SickErrorException(errMsg.c_str());
-	
+
       }
 
     }
@@ -2393,36 +2396,36 @@ namespace SickToolbox {
     try {
       _setSickSensorModeToMeasure();
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
       throw;
-    }  
-  
+    }
+
     /* A quick check to ensure the requested format is supported by the driver */
     if (!_supportedScanProfileFormat(profile_format)) {
       throw SickConfigException("SickLD::_getSickScanProfiles: Unsupported profile format!");
     }
-  
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
@@ -2438,11 +2441,11 @@ namespace SickToolbox {
     temp_buffer = profile_format;
     temp_buffer = host_to_sick_ld_byte_order(temp_buffer);
     memcpy(&payload_buffer[4],&temp_buffer,2);
-  
+
     /* Define the send message object */
     SickLDMessage send_message(payload_buffer,6);
     SickLDMessage recv_message;
-  
+
     /* Send the request */
     if (num_profiles == 0) {
       std::cout << "\tRequesting " << _sickProfileFormatToString(profile_format) << " data stream from Sick LD..." << std::endl;
@@ -2454,31 +2457,31 @@ namespace SickToolbox {
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
       throw;
-    }  
-  
+    }
+
     /* Reset the payload buffer */
     memset(payload_buffer,0,6);
 
@@ -2493,7 +2496,7 @@ namespace SickToolbox {
     if (temp_buffer != profile_format) {
       throw SickErrorException("SickLD::_getSickScanProfiles: Incorrect profile format was returned by the Sick LD!");
     }
-  
+
     /* Check if the data stream flags need to be set */
     if (num_profiles == 0 && profile_format == SICK_SCAN_PROFILE_RANGE) {
       _sick_streaming_range_data = true;
@@ -2508,7 +2511,7 @@ namespace SickToolbox {
     } else {
       std::cout << "\t\tSick LD sending " << num_profiles << " scan profiles!" << std::endl;
     }
-  
+
     /* Success */
   }
 
@@ -2535,28 +2538,28 @@ namespace SickToolbox {
      *       Sick LD telegram listing.
      */
     uint16_t temp_buffer; // A temporary buffer
-  
+
     /* Check if PROFILESENT is included */
     if (profile_format & 0x0001) {
       memcpy(&temp_buffer,&src_buffer[data_offset],2);
       profile_data.profile_number = sick_ld_to_host_byte_order(temp_buffer);
       data_offset += 2;
     }
-  
+
     /* Check if PROFILECOUNT is included */
     if (profile_format & 0x0002) {
       memcpy(&temp_buffer,&src_buffer[data_offset],2);
       profile_data.profile_counter = sick_ld_to_host_byte_order(temp_buffer);
       data_offset += 2;
     }
-  
+
     /* Check if LAYERNUM is included */
     if (profile_format & 0x0004) {
       memcpy(&temp_buffer,&src_buffer[data_offset],2);
       profile_data.layer_num = sick_ld_to_host_byte_order(temp_buffer);
       data_offset += 2;
     }
-  
+
     /* The extraneous stuff is out of the way, now extract the data
      * for each of the sectors in the scan area...
      */
@@ -2571,7 +2574,7 @@ namespace SickToolbox {
       else {
 	profile_data.sector_data[i].sector_num = 0;
       }
-    
+
       /* Check if DIRSTEP is included */
       if (profile_format & 0x0010) {
 	memcpy(&temp_buffer,&src_buffer[data_offset],2);
@@ -2581,7 +2584,7 @@ namespace SickToolbox {
       else {
 	profile_data.sector_data[i].angle_step = 0;
       }
-    
+
       /* Check if POINTNUM is included */
       if (profile_format & 0x0020) {
 	memcpy(&temp_buffer,&src_buffer[data_offset],2);
@@ -2591,7 +2594,7 @@ namespace SickToolbox {
       else {
 	profile_data.sector_data[i].num_data_points = 0;
       }
-    
+
       /* Check if TSTART is included */
       if (profile_format & 0x0040) {
 	memcpy(&temp_buffer,&src_buffer[data_offset],2);
@@ -2601,7 +2604,7 @@ namespace SickToolbox {
       else {
 	profile_data.sector_data[i].timestamp_start = 0;
       }
-      
+
       /* Check if STARTDIR is included */
       if (profile_format & 0x0080) {
 	memcpy(&temp_buffer,&src_buffer[data_offset],2);
@@ -2611,7 +2614,7 @@ namespace SickToolbox {
       else {
 	profile_data.sector_data[i].angle_start = 0;
       }
-    
+
       /* Acquire the range and echo values for the sector */
       for (unsigned int j=0; j < profile_data.sector_data[i].num_data_points; j++) {
 
@@ -2624,7 +2627,7 @@ namespace SickToolbox {
 	else {
 	  profile_data.sector_data[i].range_values[j] = 0;
 	}
-      
+
 	/* Check if DIRECTION-n is included */
 	if (profile_format & 0x0200) {
 	  memcpy(&temp_buffer,&src_buffer[data_offset],2);
@@ -2634,17 +2637,17 @@ namespace SickToolbox {
 	else {
 	  profile_data.sector_data[i].scan_angles[j] = 0;
 	}
-      
+
 	/* Check if ECHO-n is included */
 	if (profile_format & 0x0400) {
 	  memcpy(&temp_buffer,&src_buffer[data_offset],2);
 	  profile_data.sector_data[i].echo_values[j] = sick_ld_to_host_byte_order(temp_buffer);
-	  data_offset += 2;      
+	  data_offset += 2;
 	}
 	else {
 	  profile_data.sector_data[i].echo_values[j] = 0;
 	}
-	      
+
       }
 
       /* Check if TEND is included */
@@ -2656,17 +2659,17 @@ namespace SickToolbox {
       else {
 	profile_data.sector_data[i].timestamp_stop = 0;
       }
-    
+
       /* Check if ENDDIR is included */
       if (profile_format & 0x1000) {
 	memcpy(&temp_buffer,&src_buffer[data_offset],2);
 	profile_data.sector_data[i].angle_stop = ((double)sick_ld_to_host_byte_order(temp_buffer))/16;
-	data_offset += 2;   
+	data_offset += 2;
       }
       else {
 	profile_data.sector_data[i].angle_stop = 0;
       }
-    
+
     }
 
     /* Check if SENSTAT is included */
@@ -2678,51 +2681,51 @@ namespace SickToolbox {
       profile_data.sensor_status = SICK_SENSOR_MODE_UNKNOWN;
       profile_data.motor_status = SICK_MOTOR_MODE_UNKNOWN;
     }
-  
+
   }
 
-  /** 
+  /**
    * \brief Kills the current data stream
    */
-  void SickLD::_cancelSickScanProfiles( ) 
+  void SickLD::_cancelSickScanProfiles( )
     throw( SickErrorException, SickTimeoutException, SickIOException ) {
 
     /* Ensure the device is in measurement mode */
     try {
       _setSickSensorModeToMeasure();
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_cancelSickScanProfiles: Unknown exception!!!" << std::endl;
       throw;
-    }  
-  
+    }
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
     /* Set the service IDs */
     payload_buffer[0] = SICK_MEAS_SERV_CODE;           // Requested service type
     payload_buffer[1] = SICK_MEAS_SERV_CANCEL_PROFILE; // Requested service subtype
-  
+
     /* Create the Sick messages */
     SickLDMessage send_message(payload_buffer,2);
     SickLDMessage recv_message;
@@ -2733,28 +2736,28 @@ namespace SickToolbox {
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-    
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getFirmwareName: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Reset the payload buffer */
     memset(payload_buffer,0,2);
-  
+
     /* Update the status of ths Sick LD */
     recv_message.GetPayload(payload_buffer);
 
@@ -2779,15 +2782,15 @@ namespace SickToolbox {
     else {
       _sick_streaming_range_and_echo_data = false;
     }
-  
-    std::cout << "\t\tStream stopped!" << std::endl;    
-  }  
 
-  /** 
+    std::cout << "\t\tStream stopped!" << std::endl;
+  }
+
+  /**
    * \brief Enables/disables nearfield suppression on the Sick LD
    * \param suppress_code Code indicating whether to enable or diable the nearfield suppression
    */
-  void SickLD::_setSickFilter( const uint8_t suppress_code ) 
+  void SickLD::_setSickFilter( const uint8_t suppress_code )
     throw( SickErrorException, SickTimeoutException, SickIOException ) {
 
     /* Ensure the device is not measuring */
@@ -2797,42 +2800,42 @@ namespace SickToolbox {
       try {
         _setSickSensorModeToRotate();
       }
-         
+
       /* Handle a timeout! */
       catch (SickTimeoutException &sick_timeout_exception) {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::_setSickFilter: Unknown exception!!!" << std::endl;
 	throw;
-      }  
+      }
 
     }
-  
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
     /* Set the service IDs */
     payload_buffer[0] = SICK_CONF_SERV_CODE;                 // Requested service type
     payload_buffer[1] = SICK_CONF_SERV_SET_FILTER;           // Requested service subtype
-    payload_buffer[3] = SICK_CONF_SERV_SET_FILTER_NEARFIELD; // Setting nearfield suppression filter    
+    payload_buffer[3] = SICK_CONF_SERV_SET_FILTER_NEARFIELD; // Setting nearfield suppression filter
     payload_buffer[5] = suppress_code;                       // Code telling whether to turn it on or off
-  
+
     /* Create the Sick messages */
     SickLDMessage send_message(payload_buffer,6);
     SickLDMessage recv_message;
@@ -2841,19 +2844,19 @@ namespace SickToolbox {
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickFilter: Unknown exception!!!" << std::endl;
@@ -2862,7 +2865,7 @@ namespace SickToolbox {
 
     /* Reset the payload buffer */
     memset(payload_buffer,0,6);
-  
+
     /* Acquire the returned payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -2875,7 +2878,7 @@ namespace SickToolbox {
     if (filter_item != SICK_CONF_SERV_SET_FILTER_NEARFIELD) {
       throw SickErrorException("SickLD::_setSickFilter: Unexpected filter item returned from Sick LD!");
     }
-  
+
     /* Success */
   }
 
@@ -2885,7 +2888,7 @@ namespace SickToolbox {
   void SickLD::_getSickIdentity( )  throw( SickTimeoutException, SickIOException ) {
 
     try {
-      
+
       _getSensorPartNumber();
       _getSensorName();
       _getSensorVersion();
@@ -2899,25 +2902,25 @@ namespace SickToolbox {
       _getApplicationSoftwareVersion();
 
     }
- 
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getSickIdentity: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Success! */
   }
 
@@ -2932,16 +2935,16 @@ namespace SickToolbox {
     /* Set the service IDs */
     payload_buffer[0] = SICK_STAT_SERV_CODE;       // Requested service type
     payload_buffer[1] = SICK_STAT_SERV_GET_STATUS; // Requested service subtype
-  
+
     /* Create the Sick messages */
     SickLDMessage send_message(payload_buffer,2);
     SickLDMessage recv_message;
-  
+
     /* Send the message and check the reply */
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-    
+
     catch(SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
@@ -2956,10 +2959,10 @@ namespace SickToolbox {
       std::cerr << "SickLD::_getSickStatus - Unknown exception!" << std::endl;
       throw;
     }
-    
+
     /* Reset the buffer (not necessary, but its better to do so just in case) */
     memset(payload_buffer,0,2);
-  
+
     /* Extract the message payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -2992,30 +2995,30 @@ namespace SickToolbox {
     try {
       _setSickSensorModeToIdle();
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickGlobalConfig: Unknown exception!!!" << std::endl;
       throw;
-    }  
+    }
 
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
@@ -3044,24 +3047,24 @@ namespace SickToolbox {
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-              
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickGlobalConfig: Unknown exception!!!" << std::endl;
       throw;
-    }  
+    }
 
     /* Reset the payload buffer */
     memset(payload_buffer,0,10);
@@ -3077,8 +3080,8 @@ namespace SickToolbox {
     /* Update the device driver with the new values */
     _sick_global_config.sick_sensor_id = sick_sensor_id;
     _sick_global_config.sick_motor_speed = sick_motor_speed;
-    _sick_global_config.sick_angle_step = sick_angle_step;  
-    
+    _sick_global_config.sick_angle_step = sick_angle_step;
+
     /* Success! */
   }
 
@@ -3091,31 +3094,31 @@ namespace SickToolbox {
     try {
       _setSickSensorModeToIdle();
     }
-       
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getSickGlobalConfig: Unknown exception!!!" << std::endl;
       throw;
-    }  
-  
+    }
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
@@ -3123,28 +3126,28 @@ namespace SickToolbox {
     payload_buffer[0] = SICK_CONF_SERV_CODE;              // Requested service type
     payload_buffer[1] = SICK_CONF_SERV_GET_CONFIGURATION; // Requested service subtype
     payload_buffer[3] = SICK_CONF_KEY_GLOBAL;             // Configuration key
-  
+
     /* Create the Sick messages */
     SickLDMessage send_message(payload_buffer,4);
     SickLDMessage recv_message;
-  
+
     /* Send the message and check the reply */
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-            
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getSickGlobalConfig: Unknown exception!!!" << std::endl;
@@ -3153,7 +3156,7 @@ namespace SickToolbox {
 
     /* Reset the buffer (not necessary, but its better to do so just in case) */
     memset(payload_buffer,0,4);
-  
+
     /* Extract the message payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -3173,7 +3176,7 @@ namespace SickToolbox {
     memcpy(&_sick_global_config.sick_sensor_id,&payload_buffer[data_offset],2);
     _sick_global_config.sick_sensor_id = sick_ld_to_host_byte_order(_sick_global_config.sick_sensor_id);
     data_offset += 2;
-  
+
     /* Extract the nominal motor speed */
     memcpy(&_sick_global_config.sick_motor_speed,&payload_buffer[data_offset],2);
     _sick_global_config.sick_motor_speed = sick_ld_to_host_byte_order(_sick_global_config.sick_motor_speed);
@@ -3182,7 +3185,7 @@ namespace SickToolbox {
     /* Extract the angular step */
     memcpy(&temp_buffer,&payload_buffer[data_offset],2);
     _sick_global_config.sick_angle_step = _ticksToAngle(sick_ld_to_host_byte_order(temp_buffer));
-  
+
     /* Success */
   }
 
@@ -3193,71 +3196,71 @@ namespace SickToolbox {
     throw( SickErrorException, SickTimeoutException, SickIOException ) {
 
     /* Ensure the device is in IDLE mode */
-    try {      
+    try {
       _setSickSensorModeToIdle();
     }
-        
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
       throw;
-    }  
-    
+    }
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
-    
+
     /* Set the service IDs */
     payload_buffer[0] = SICK_CONF_SERV_CODE;              // Requested service type
     payload_buffer[1] = SICK_CONF_SERV_GET_CONFIGURATION; // Requested service subtype
     payload_buffer[3] = SICK_CONF_KEY_ETHERNET;           // Configuration key
-    
+
     /* Create the Sick messages */
     SickLDMessage send_message(payload_buffer,4);
     SickLDMessage recv_message;
-    
+
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-        
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
       throw;
-    }  
-    
+    }
+
     /* Reset the buffer (not necessary, but its better to do so just in case) */
     memset(payload_buffer,0,4);
-  
+
     /* Extract the message payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -3272,7 +3275,7 @@ namespace SickToolbox {
     if (temp_buffer != SICK_CONF_KEY_ETHERNET) {
       throw SickErrorException("SickLD::_getSickEthernetConfig: Unexpected message contents!");
     }
-  
+
     /* Extract the IP address of the Sick LD */
     for(unsigned int i=0; i < 4; i++,data_offset+=2) {
       memcpy(&_sick_ethernet_config.sick_ip_address[i],&payload_buffer[data_offset],2);
@@ -3320,62 +3323,62 @@ namespace SickToolbox {
 
     /* Reset the sector config struct */
     memset(&_sick_sector_config,0,sizeof(sick_ld_config_sector_t));
-    
+
     /* Get the configuration for all initialized sectors */
     for (unsigned int i = 0; i < SICK_MAX_NUM_SECTORS; i++) {
-      
+
       /* Query the Sick for the function of the ith sector */
       try {
 	_getSickSectorFunction(i,_sick_sector_config.sick_sector_functions[i],_sick_sector_config.sick_sector_stop_angles[i]);
       }
-      
+
       /* Handle a timeout! */
       catch (SickTimeoutException &sick_timeout_exception) {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::_getSickSectorConfig: Unknown exception!!!" << std::endl;
 	throw;
-      } 
-      
+      }
+
       /* Check if the sector is initialized */
       if (_sick_sector_config.sick_sector_functions[i] != SICK_CONF_SECTOR_NOT_INITIALIZED) {
-	
+
 	/* Check whether the sector is active (i.e. measuring) */
 	if (_sick_sector_config.sick_sector_functions[i] == SICK_CONF_SECTOR_NORMAL_MEASUREMENT) {
 	  _sick_sector_config.sick_active_sector_ids[_sick_sector_config.sick_num_active_sectors] = i;
 	  _sick_sector_config.sick_num_active_sectors++;
 	}
-	
+
 	/* Update the number of initialized sectors */
 	_sick_sector_config.sick_num_initialized_sectors++;
-      }    
+      }
       else {
-	
+
 	/* An uninitialized sector marks the end of the sector configuration */
 	break;
       }
-      
-    } 
-  
-    /* Compute the starting angle for each of the initialized sectors */  
+
+    }
+
+    /* Compute the starting angle for each of the initialized sectors */
     for (unsigned int i = 1; i < _sick_sector_config.sick_num_initialized_sectors; i++) {
-      _sick_sector_config.sick_sector_start_angles[i] = fmod(_sick_sector_config.sick_sector_stop_angles[i-1]+_sick_global_config.sick_angle_step,360);      
+      _sick_sector_config.sick_sector_start_angles[i] = fmod(_sick_sector_config.sick_sector_stop_angles[i-1]+_sick_global_config.sick_angle_step,360);
     }
 
     /* Determine the starting angle for the first sector */
@@ -3383,7 +3386,7 @@ namespace SickToolbox {
       _sick_sector_config.sick_sector_start_angles[0] =
 	fmod(_sick_sector_config.sick_sector_stop_angles[_sick_sector_config.sick_num_initialized_sectors-1]+_sick_global_config.sick_angle_step,360);
     }
-  
+
     /* Success! */
   }
 
@@ -3394,15 +3397,15 @@ namespace SickToolbox {
    */
   void SickLD::_getIdentificationString( const uint8_t id_request_code, std::string &id_return_string )
     throw( SickTimeoutException, SickIOException ) {
-    
+
     /* Allocate a single buffer for payload contents */
     uint8_t payload_buffer[SickLDMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
 
     /* Set the service IDs */
     payload_buffer[0] = SICK_STAT_SERV_CODE;   // Requested service type
-    payload_buffer[1] = SICK_STAT_SERV_GET_ID; // Requested service subtype                  
+    payload_buffer[1] = SICK_STAT_SERV_GET_ID; // Requested service subtype
     payload_buffer[3] = id_request_code;       // ID information that is being requested
-  
+
     /* Create the Sick LD messages */
     SickLDMessage send_message(payload_buffer,4);
     SickLDMessage recv_message;
@@ -3411,19 +3414,19 @@ namespace SickToolbox {
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-    
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle write buffer exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getIdentificationString: Unknown exception!!!" << std::endl;
@@ -3432,7 +3435,7 @@ namespace SickToolbox {
 
     /* Reset the payload buffer (not necessary, but it doesn't hurt to be careful) */
     memset(payload_buffer,0,4);
-  
+
     /* Extract the message payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -3451,19 +3454,19 @@ namespace SickToolbox {
     try {
       _getIdentificationString(SICK_STAT_SERV_GET_ID_SENSOR_PART_NUM,_sick_identity.sick_part_number);
     }
-          
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getSensorPartNumber: Unknown exception!!!" << std::endl;
@@ -3488,19 +3491,19 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getSensorName: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Ok */
   }
 
@@ -3519,19 +3522,19 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getSensorVersion: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Ok */
   }
 
@@ -3543,25 +3546,25 @@ namespace SickToolbox {
     try {
       _getIdentificationString(SICK_STAT_SERV_GET_ID_SENSOR_SERIAL_NUM,_sick_identity.sick_serial_number);
     }
-    
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getSensorSerialNumber: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Ok */
   }
 
@@ -3573,19 +3576,19 @@ namespace SickToolbox {
     try {
       _getIdentificationString(SICK_STAT_SERV_GET_ID_SENSOR_EDM_SERIAL_NUM,_sick_identity.sick_edm_serial_number);
     }
-    
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getSensorEDMSerialNumber: Unknown exception!!!" << std::endl;
@@ -3602,26 +3605,26 @@ namespace SickToolbox {
 
     try {
       _getIdentificationString(SICK_STAT_SERV_GET_ID_FIRMWARE_PART_NUM,_sick_identity.sick_firmware_part_number);
-    }  
-    
+    }
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getFirmwarePartNumber: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Ok */
   }
 
@@ -3633,29 +3636,29 @@ namespace SickToolbox {
     try {
       _getIdentificationString(SICK_STAT_SERV_GET_ID_FIRMWARE_NAME,_sick_identity.sick_firmware_name);
     }
-        
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getFirmwareName: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Ok */
   }
 
-  /** 
+  /**
    * \brief Get firmware version number
    */
   void SickLD::_getFirmwareVersion( ) throw( SickTimeoutException, SickIOException ){
@@ -3663,25 +3666,25 @@ namespace SickToolbox {
     try {
       _getIdentificationString(SICK_STAT_SERV_GET_ID_FIRMWARE_VERSION,_sick_identity.sick_firmware_version);
     }
-    
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getFirmwareVersion: Unknown exception!!!" << std::endl;
       throw;
     }
-    
+
     /* Ok */
   }
 
@@ -3699,19 +3702,19 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getApplicationSoftwarePartNumber: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Ok */
   }
 
@@ -3723,25 +3726,25 @@ namespace SickToolbox {
     try {
       _getIdentificationString(SICK_STAT_SERV_GET_ID_APP_NAME,_sick_identity.sick_application_software_name);
     }
-    
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getApplication Software Name: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Ok */
   }
 
@@ -3759,19 +3762,19 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_getApplicationSoftwareVersion: Unknown exception!!!" << std::endl;
       throw;
     }
-  
+
     /* Ok */
   }
 
@@ -3793,11 +3796,11 @@ namespace SickToolbox {
     unsigned int num_sectors = 0;
     unsigned int sector_functions[SICK_MAX_NUM_SECTORS] = {0};
     double sector_stop_angles[SICK_MAX_NUM_SECTORS] = {0};
-  
+
     /* A few dummy buffers */
     double sorted_active_sector_start_angles[SICK_MAX_NUM_SECTORS] = {0};
     double sorted_active_sector_stop_angles[SICK_MAX_NUM_SECTORS] = {0};
-  
+
     /* Begin by checking the num of active sectors */
     if (num_active_sectors > SICK_MAX_NUM_SECTORS/2) {
       throw SickConfigException("SickLD::_setSickGlobalParamsAndScanAreas: Invalid number of active scan sectors!");
@@ -3819,12 +3822,12 @@ namespace SickToolbox {
 
     /* Ensure a proper ordering of the given sector angle sets */
     _sortScanAreas(sorted_active_sector_start_angles,sorted_active_sector_stop_angles,num_active_sectors);
-    
+
     /* Check for an invalid configuration */
     if (!_validActiveSectors(sorted_active_sector_start_angles,sorted_active_sector_stop_angles,num_active_sectors)) {
       throw SickConfigException("SickLD::_setSickGlobalParamsAndScanAreas: Invalid sector configuration!");
     }
-  
+
     /* Ensure the resulting pulse frequency is valid for the device */
     if (!_validPulseFrequency(sick_motor_speed,sick_angle_step,sorted_active_sector_start_angles, sorted_active_sector_stop_angles,num_active_sectors)) {
       throw SickConfigException("SickLD::_setSickGlobalParamsAndScanAreas: Invalid pulse frequency!");
@@ -3835,7 +3838,7 @@ namespace SickToolbox {
 			      sector_functions,sector_stop_angles,num_sectors);
 
     try {
-  
+
       /* Set the new sector configuration */
       _setSickSectorConfig(sector_functions,sector_stop_angles,num_sectors,false);
 
@@ -3848,31 +3851,31 @@ namespace SickToolbox {
       _setSickGlobalConfig(GetSickSensorID(),sick_motor_speed,sick_angle_step);
 
     }
-    
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickGlobalParamsAndScanAreas: Unknown exception!!!" << std::endl;
       throw;
-    }  
-    
+    }
+
     /* Success! */
   }
 
@@ -3890,11 +3893,11 @@ namespace SickToolbox {
     unsigned int num_sectors = 0;
     unsigned int sector_functions[SICK_MAX_NUM_SECTORS] = {0};
     double sector_stop_angles[SICK_MAX_NUM_SECTORS] = {0};
-  
+
     /* A few dummy buffers */
     double sorted_active_sector_start_angles[SICK_MAX_NUM_SECTORS] = {0};
     double sorted_active_sector_stop_angles[SICK_MAX_NUM_SECTORS] = {0};
-  
+
     /* Begin by checking the num of active sectors */
     if (num_active_sectors > SICK_MAX_NUM_SECTORS/2)
       throw SickConfigException("_setSickTemporaryScanAreas: Invalid number of active scan sectors!");
@@ -3910,13 +3913,13 @@ namespace SickToolbox {
     if (!_validActiveSectors(sorted_active_sector_start_angles,sorted_active_sector_stop_angles,num_active_sectors)) {
       throw SickConfigException("SickLD::_setSickGlobalParamsAndScanAreas: Invalid sector configuration!");
     }
-    
+
     /* Ensure the resulting pulse frequency is valid for the device */
     if (!_validPulseFrequency(GetSickMotorSpeed(),GetSickScanResolution(),sorted_active_sector_start_angles,
 			      sorted_active_sector_stop_angles,num_active_sectors)) {
       throw SickConfigException("SickLD::_setSickGlobalParamsAndScanAreas: Invalid pulse frequency!");
     }
-    
+
     /* Generate the corresponding device-ready sector config */
     _generateSickSectorConfig(sorted_active_sector_start_angles,sorted_active_sector_stop_angles,num_active_sectors,GetSickScanResolution(),
 			      sector_functions,sector_stop_angles,num_sectors);
@@ -3931,26 +3934,26 @@ namespace SickToolbox {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle a returned error code */
     catch (SickErrorException &sick_error_exception) {
       std::cerr << sick_error_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickTemporaryScanAreas: Unknown exception!!!" << std::endl;
       throw;
-    }  
-    
-    /* Success! */ 
+    }
+
+    /* Success! */
   }
 
   /**
@@ -3961,59 +3964,59 @@ namespace SickToolbox {
    * \param set_flash_flag Indicates whether to mark the sectors for writing to flash w/ the next SET_CONFIG (global)
    */
   void SickLD::_setSickSectorConfig( const unsigned int * const sector_functions, const double * const sector_stop_angles,
-				     const unsigned int num_sectors, const bool write_to_flash ) 
+				     const unsigned int num_sectors, const bool write_to_flash )
 				     throw( SickErrorException, SickTimeoutException, SickIOException, SickConfigException ) {
 
     /* Assign the new sector configuration to the device */
     for (unsigned int sector_id = 0; sector_id < num_sectors; sector_id++) {
 
       try {
-	
+
         /* Set the corresponding sector function */
         _setSickSectorFunction(sector_id,sector_functions[sector_id],sector_stop_angles[sector_id],write_to_flash);
-    
+
         /* Resync the driver with the new sector configuration */
         _getSickSectorConfig();
 
       }
-      
+
       /* Handle a timeout! */
       catch (SickTimeoutException &sick_timeout_exception) {
 	std::cerr << sick_timeout_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle I/O exceptions */
       catch (SickIOException &sick_io_exception) {
 	std::cerr << sick_io_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickErrorException &sick_error_exception) {
 	std::cerr << sick_error_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* Handle a returned error code */
       catch (SickConfigException &sick_config_exception) {
 	std::cerr << sick_config_exception.what() << std::endl;
 	throw;
       }
-      
+
       /* A safety net */
       catch (...) {
 	std::cerr << "SickLMS::_setSickSectorConfig: Unknown exception!!!" << std::endl;
 	throw;
-      }  
+      }
 
     }
-  
+
     /* Success */
   }
 
   /**
-   * \brief Sets the Sick LEDs and switching outputs 
+   * \brief Sets the Sick LEDs and switching outputs
    * \param sick_signal_flags Flags indicating which LEDs and SWITCHES to activate
    *
    * NOTE: This method does not preserve the previous state of the Sick's signals.
@@ -4029,28 +4032,28 @@ namespace SickToolbox {
     payload_buffer[0] = SICK_STAT_SERV_CODE;       // Requested service type
     payload_buffer[1] = SICK_STAT_SERV_SET_SIGNAL; // Requested service subtype
     payload_buffer[3] = sick_signal_flags;         // PORTVAL
-  
+
     /* Create the Sick message */
     SickLDMessage send_message(payload_buffer,4);
     SickLDMessage recv_message;
-  
+
     /* Send the message and get a response */
     try {
       _sendMessageAndGetReply(send_message,recv_message);
     }
-           
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle I/O exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLMS::_setSickSensorMode: Unknown exception!!!" << std::endl;
@@ -4059,7 +4062,7 @@ namespace SickToolbox {
 
     /* Reset the payload buffer */
     memset(payload_buffer,0,4);
-  
+
     /* Extract the message payload */
     recv_message.GetPayload(payload_buffer);
 
@@ -4067,7 +4070,7 @@ namespace SickToolbox {
     if (payload_buffer[2] != 0) {
       throw SickErrorException("SickLD::_setSickSignals: Command failed!");
     }
-  
+
     /* Success */
   }
 
@@ -4075,13 +4078,13 @@ namespace SickToolbox {
    * \brief Send a message to the Sick LD and get its reply.
    * \param &send_message A reference to the well-formed message object that is to be sent.
    * \param &recv_message The destination message object for the received reply.
-   * \param timeout_value The maximum time to allow for a response in seconds
+   * \param timeout_value The maximum time to allow for a response in milliseconds
    *
    * NOTE: This method also verifies the correct reply to the given send_message
    *       object is received.  So, if it fails, it may be due to an unexpected reply.
    */
-  void SickLD::_sendMessageAndGetReply( const SickLDMessage &send_message, 
-                                        SickLDMessage &recv_message, 
+  void SickLD::_sendMessageAndGetReply( const SickLDMessage &send_message,
+                                        SickLDMessage &recv_message,
                                         const unsigned int timeout_value ) throw( SickIOException, SickTimeoutException ) {
 
     uint8_t byte_sequence[2] = {0};
@@ -4091,21 +4094,21 @@ namespace SickToolbox {
 
     /* Send message and get reply using parent's method */
     try {
-      SickLIDAR< SickLDBufferMonitor, SickLDMessage >::_sendMessageAndGetReply(send_message,recv_message,byte_sequence,2,0,DEFAULT_SICK_MESSAGE_TIMEOUT,1);
+      SickLIDAR< SickLDBufferMonitor, SickLDMessage >::_sendMessageAndGetReply(send_message,recv_message,byte_sequence,2,0,timeout_value,1);
     }
-        
+
     /* Handle a timeout! */
     catch (SickTimeoutException &sick_timeout_exception) {
       std::cerr << sick_timeout_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle write buffer exceptions */
     catch (SickIOException &sick_io_exception) {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* A safety net */
     catch (...) {
       std::cerr << "SickLD::_sendMessageAndGetReply: Unknown exception!!!" << std::endl;
@@ -4120,23 +4123,23 @@ namespace SickToolbox {
   void SickLD::_flushTCPRecvBuffer( ) throw( SickIOException, SickThreadException ) {
 
     uint8_t null_byte;
-    int num_bytes_waiting = 0;    
+    int num_bytes_waiting = 0;
 
     try {
-    
+
       /* Acquire access to the data stream */
       _sick_buffer_monitor->AcquireDataStream();
-      
+
       /* Acquire the number of the bytes awaiting read */
       if (ioctl(_sick_fd,FIONREAD,&num_bytes_waiting)) {
 	throw SickIOException("SickLD::_flushTCPRecvBuffer: ioctl() failed! (Couldn't get the number of bytes awaiting read!)");
       }
-      
+
       /* Read off the bytes awaiting in the buffer */
       for (int i = 0; i < num_bytes_waiting; i++) {
       	read(_sick_fd,&null_byte,1);
       }
-      
+
       /* Release the stream */
       _sick_buffer_monitor->ReleaseDataStream();
 
@@ -4147,7 +4150,7 @@ namespace SickToolbox {
       std::cerr << sick_io_exception.what() << std::endl;
       throw;
     }
-    
+
     /* Handle thread exceptions */
     catch(SickThreadException &sick_thread_exception) {
       std::cerr << sick_thread_exception.what() << std::endl;
@@ -4159,9 +4162,9 @@ namespace SickToolbox {
       std::cerr << "SickLMS::_flushTerminalBuffer: Unknown exception!" << std::endl;
       throw;
     }
-    
+
   }
-  
+
   /**
    * \brief Teardown TCP connection to Sick LD
    */
@@ -4171,7 +4174,7 @@ namespace SickToolbox {
     if (close(_sick_fd) < 0) {
       throw SickIOException("SickLD::_teardownConnection: close() failed!");
     }
-  
+
   }
 
   /**
@@ -4197,25 +4200,25 @@ namespace SickToolbox {
     /* Generate the sector configuration for multiple sectors */
     double final_diff = 0;
     if (num_active_sectors > 1) {
-    
+
       /* Generate the actual sector configuration for the device */
       for (unsigned int i = 0; i < num_active_sectors; i++) {
 
 	/* Insert the measurement sector for the active area */
 	sector_functions[num_sectors] = SICK_CONF_SECTOR_NORMAL_MEASUREMENT;
 	sector_stop_angles[num_sectors] = active_sector_stop_angles[i];
-	num_sectors++;	
-      
+	num_sectors++;
+
 	/* Check whether to insert a non-measurement sector */
 	if ((i < num_active_sectors - 1) && (active_sector_start_angles[i+1]-active_sector_stop_angles[i] >= 2*sick_angle_step)) {
 
 	  /* Set the next sector function as non-measurement */
 	  sector_functions[num_sectors] = SICK_CONF_SECTOR_NO_MEASUREMENT;
 	  sector_stop_angles[num_sectors] = active_sector_start_angles[i+1] - sick_angle_step;
-	  num_sectors++;		
+	  num_sectors++;
 
 	}
-      
+
       }
 
       /* Compute the difference between the final stop angle and the first start angle*/
@@ -4224,24 +4227,24 @@ namespace SickToolbox {
       }
       else {
 	final_diff = active_sector_start_angles[0] + (360 - active_sector_stop_angles[num_active_sectors-1]);
-      }        
-    
+      }
+
     }
     else {
-    
+
       /* Insert the measurement sector for the active area */
       sector_functions[num_sectors] = SICK_CONF_SECTOR_NORMAL_MEASUREMENT;
       sector_stop_angles[num_sectors] = active_sector_stop_angles[0];
-      num_sectors++;	
-    
+      num_sectors++;
+
       /* Compute the difference between the final stop angle and the first start angle*/
       if (active_sector_stop_angles[0] <= active_sector_start_angles[0]) {
 	final_diff = active_sector_start_angles[0] - active_sector_stop_angles[num_active_sectors-1];
       }
       else {
 	final_diff = active_sector_start_angles[0] + (360 - active_sector_stop_angles[num_active_sectors-1]);
-      }        
-    
+      }
+
     }
 
     /* Check whether to add a final non-measurement sector */
@@ -4252,8 +4255,8 @@ namespace SickToolbox {
       sector_stop_angles[num_sectors] = active_sector_start_angles[0]-sick_angle_step +
 	                                360*(sick_angle_step > active_sector_start_angles[0]);
       num_sectors++;
-    
-    }    
+
+    }
 
     /* If necessary insert the non-initialized sector */
     if (num_sectors < SICK_MAX_NUM_SECTORS) {
@@ -4261,7 +4264,7 @@ namespace SickToolbox {
       /* Include the uninitialized sector */
       sector_functions[num_sectors] = SICK_CONF_SECTOR_NOT_INITIALIZED;
       sector_stop_angles[num_sectors] = 0;
-      num_sectors++;	    
+      num_sectors++;
 
     }
 
@@ -4320,12 +4323,12 @@ namespace SickToolbox {
    * \param sick_sensor_id Sick sensor ID
    */
   bool SickLD::_validSickSensorID( const unsigned int sick_sensor_id ) const {
-    
+
     /* Ensure the sensor ID is valid */
     if (sick_sensor_id < SICK_MIN_VALID_SENSOR_ID || sick_sensor_id > SICK_MAX_VALID_SENSOR_ID) {
       return false;
-    }  
-    
+    }
+
     /* Success */
     return true;
   }
@@ -4333,7 +4336,7 @@ namespace SickToolbox {
   /**
    * \brief Checks whether the given sick motor speed is valid for the device.
    * \param sick_motor_speed The sick motor speed (Hz)
-   */ 
+   */
   bool SickLD::_validSickMotorSpeed( const unsigned int sick_motor_speed ) const {
 
     /* Check the validity of the new Sick LD motor speed */
@@ -4350,7 +4353,7 @@ namespace SickToolbox {
    * \param sick_scan_resolution Scan resolution of the device
    * \param sector_start_angles An array of the sector start angles
    * \param sector_stop_angles An array of the sector stop angles
-   */ 
+   */
   bool SickLD::_validSickScanResolution( const double sick_angle_step, const double * const sector_start_angles,
 					 const double * const sector_stop_angles, const unsigned int num_sectors ) const {
 
@@ -4359,16 +4362,16 @@ namespace SickToolbox {
       std::cerr << "Invalid scan resolution! (should be a positive multiple of " << SICK_MAX_SCAN_ANGULAR_RESOLUTION << ")" << std::endl;
       return false;
     }
-  
+
     /* Ensure that the sector boundaries are divisible by the desired step angle */
     for(unsigned int i = 0; i < num_sectors; i++) {
-      
+
       /* Check both the sector start and stop angles */
       if (fmod(sector_start_angles[i],sick_angle_step) != 0 || fmod(sector_stop_angles[i],sick_angle_step) != 0) {
 	std::cerr << "Invalid scan resolution! (sector boundaries must be evenly divisible by the step angle)" << std::endl;
 	return false;
       }
-    
+
     }
 
     /* Success */
@@ -4379,7 +4382,7 @@ namespace SickToolbox {
    * \brief Checks whether the given configuration yields a valid mean and max pulse frequency (uses current sector config)
    * \param sick_motor_speed Desired sick motor speed (Hz)
    * \param sick_angle_step Desired scan angular resolution (deg)
-   */ 
+   */
   bool SickLD::_validPulseFrequency( const unsigned int sick_motor_speed, const double sick_angle_step ) const {
 
     /* Simply call the other function w/ the current sector config and the given motor and step angle values */
@@ -4387,7 +4390,7 @@ namespace SickToolbox {
 			     _sick_sector_config.sick_sector_stop_angles,_sick_sector_config.sick_num_active_sectors)) {
       return false;
     }
-    
+
     /* Valid! */
     return true;
   }
@@ -4399,27 +4402,27 @@ namespace SickToolbox {
    * \param active_sector_start_angles Angles marking the beginning of each desired active sector/area
    * \param active_sector_stop_angles Angles marking the end of each desired active sector/area
    * \param num_active_sectors The number of active sectors/scan areas are given
-   */ 
+   */
   bool SickLD::_validPulseFrequency( const unsigned int sick_motor_speed, const double sick_angle_step,
 				     const double * const active_sector_start_angles,
 				     const double * const active_sector_stop_angles,
 				     const unsigned int num_active_sectors ) const {
-  
+
     /* Compute the scan area */
     double scan_area = _computeScanArea(sick_angle_step,active_sector_start_angles,active_sector_stop_angles,num_active_sectors);
-  
+
     /* Check the mean pulse rate of the desired configuration */
-    if (_computeMeanPulseFrequency(scan_area,sick_motor_speed,sick_angle_step) > SICK_MAX_MEAN_PULSE_FREQUENCY) { 
+    if (_computeMeanPulseFrequency(scan_area,sick_motor_speed,sick_angle_step) > SICK_MAX_MEAN_PULSE_FREQUENCY) {
       std::cerr << "Max mean pulse frequency exceeded! (try a slower motor speed, a larger step angle and/or a smaller active scan area)" << std::endl;
       return false;
     }
 
     /* Check the maximum pulse rate of the desired configuration */
-    if (_computeMaxPulseFrequency(SICK_MAX_SCAN_AREA,sick_motor_speed,sick_angle_step) > SICK_MAX_PULSE_FREQUENCY) { 
+    if (_computeMaxPulseFrequency(SICK_MAX_SCAN_AREA,sick_motor_speed,sick_angle_step) > SICK_MAX_PULSE_FREQUENCY) {
       std::cerr << "Max pulse frequency exceeded! (try a slower motor speed, a larger step angle and/or a smaller active scan area)" << std::endl;
       return false;
     }
-  
+
     /* Valid! */
     return true;
   }
@@ -4431,15 +4434,15 @@ namespace SickToolbox {
    * \param active_sector_start_angles The start angles for the active scan sectors
    * \param active_sector_stop_angles The stop angles for the active scan sectors
    * \param num_active_sectors The number of active sectors
-   * \return The Sick LD scan area corresponding to the given bounds 
+   * \return The Sick LD scan area corresponding to the given bounds
    *
    * NOTE: The Sick LD computes scan area by subtracting the end of the
-   *       previous sector from the end of the current sector.  As such, we have 
+   *       previous sector from the end of the current sector.  As such, we have
    *       to add a single step angle to our computation in order to get the scan
    *       area that is used by the Sick LD.  Unfortunately, this is how the device
    *       does its computation (as opposed to using the angle at which the first
    *       scan in the given sector is taken) so this is how we do it.
-   *       
+   *
    */
   double SickLD::_computeScanArea( const double sick_angle_step, const double * const active_sector_start_angles,
 				   const double * const active_sector_stop_angles, const unsigned int num_active_sectors ) const {
@@ -4447,7 +4450,7 @@ namespace SickToolbox {
     /* Define the current scan area */
     double total_scan_area = 0;
     double curr_sector_scan_area = 0;
-  
+
     /* For each sector given sum the absolute scan area for it */
     for (unsigned int i = 0; i < num_active_sectors; i++) {
 
@@ -4457,9 +4460,9 @@ namespace SickToolbox {
       /* Update the total scan area */
       total_scan_area += curr_sector_scan_area + sick_angle_step;
     }
-  
+
     /* Return the computed area */
-    return total_scan_area;  
+    return total_scan_area;
 
   }
 
@@ -4467,14 +4470,14 @@ namespace SickToolbox {
    * \brief Sort the scan areas based on the given angles to place them in device "scan" order
    * \param sector_start_angles Array of angles (deg) defining the starting position of each active sector
    * \param sector_stop_angles Array of angles (deg) defining the stopping position of each active sector
-   * \param num_active_sectors Number of active sectors 
+   * \param num_active_sectors Number of active sectors
    */
   void SickLD::_sortScanAreas( double * const sector_start_angles, double * const sector_stop_angles,
 			       const unsigned int num_sectors ) const {
 
     /* A dummy temp variable */
     double temp = 0;
-  
+
     /* Employ a simple bubblesort (NOTE: Only at most a handful of values will have to be sorted) */
     for (unsigned int i = 0; i < num_sectors; i++) {
       for (unsigned int j = (num_sectors-1); j > i; j--) {
@@ -4484,7 +4487,7 @@ namespace SickToolbox {
 	}
       }
     }
-  
+
   }
 
   /**
@@ -4505,9 +4508,9 @@ namespace SickToolbox {
 	std::cerr << "Invalid sector config! (all degree values must be in [0,360))" << std::endl;
 	return false;
       }
-    
+
     }
-  
+
     /* If multiple sectors are defined */
     if (num_sectors > 1) {
 
@@ -4516,16 +4519,16 @@ namespace SickToolbox {
 	if (sector_start_angles[i] > sector_stop_angles[i] || sector_stop_angles[i] >= sector_start_angles[i+1]) {
 	  std::cerr << "Invalid sector definitions! (check sector bounds)" << std::endl;
 	  return false;
-	}    
+	}
       }
-    
-      /* Check the last sector against the first */    
+
+      /* Check the last sector against the first */
       if (sector_stop_angles[num_sectors-1] <= sector_start_angles[num_sectors-1] &&
 	  sector_stop_angles[num_sectors-1] >= sector_start_angles[0]) {
 	std::cerr << "Invalid sector definitions! (check sector bounds)" << std::endl;
 	return false;
       }
-    
+
     }
 
     /* Valid! */
@@ -4555,7 +4558,7 @@ namespace SickToolbox {
    * \param &sector_data The sector configuration to be printed
    */
   void SickLD::_printSectorProfileData( const sick_ld_sector_data_t &sector_data ) const {
-  
+
     std::cout << "\t---- Sector Data " << sector_data.sector_num << " ----" << std::endl;
     std::cout << "\tSector Num.: " <<  sector_data.sector_num << std::endl;
     std::cout << "\tSector Angle Step (deg): " << sector_data.angle_step<< std::endl;
@@ -4574,7 +4577,7 @@ namespace SickToolbox {
    *                          with the given profile.
    */
   void SickLD::_printSickScanProfile( const sick_ld_scan_profile_t profile_data, const bool print_sector_data ) const {
-  
+
     std::cout << "\t========= Sick Scan Prof. =========" << std::endl;
     std::cout << "\tProfile Num.: " << profile_data.profile_number << std::endl;
     std::cout << "\tProfile Counter: " << profile_data.profile_counter << std::endl;
@@ -4587,7 +4590,7 @@ namespace SickToolbox {
     for (unsigned int i=0; i < profile_data.num_sectors && print_sector_data; i++) {
       _printSectorProfileData(profile_data.sector_data[i]);
     }
-    
+
     std::cout << "\t====================================" << std::endl;
     std::cout << std::flush;
   }
@@ -4679,7 +4682,7 @@ namespace SickToolbox {
     default:
       return "UNRECOGNIZED!!!";
     }
-  
+
   }
 
   /**
@@ -4699,7 +4702,7 @@ namespace SickToolbox {
     default:
       return "UNRECOGNIZED!!!";
     }
-  
+
   }
 
   /**
@@ -4723,7 +4726,7 @@ namespace SickToolbox {
     default:
       return "UNRECOGNIZED!!!";
     }
-  
+
   }
 
   /**
@@ -4741,7 +4744,7 @@ namespace SickToolbox {
     default:
       return "UNRECOGNIZED!!!";
     }
-  
+
   }
 
   /**
@@ -4749,12 +4752,12 @@ namespace SickToolbox {
    */
   void SickLD::_printInitFooter( ) const {
 
-    std::cout << "\t*** Init. complete: Sick LD is online and ready!" << std::endl; 
-    std::cout << "\tNum. Active Sectors: " << (int)_sick_sector_config.sick_num_active_sectors << std::endl;  
+    std::cout << "\t*** Init. complete: Sick LD is online and ready!" << std::endl;
+    std::cout << "\tNum. Active Sectors: " << (int)_sick_sector_config.sick_num_active_sectors << std::endl;
     std::cout << "\tMotor Speed: " << _sick_global_config.sick_motor_speed << " (Hz)" << std::endl;
     std::cout << "\tScan Resolution: " << _sick_global_config.sick_angle_step << " (deg)" << std::endl;
     std::cout << std::endl;
-    
+
   }
 
 } //namespace SickToolbox
